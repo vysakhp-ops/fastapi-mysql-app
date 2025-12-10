@@ -4,13 +4,20 @@ pipeline {
     environment {
         IMAGE_NAME = "fastapi-mysql-app"
         DOCKER_USER = "vysakhpanilkumar97"
+        DEPLOY_USER = "innovature"
+        DEPLOY_HOST = "localhost"     // or the server IP
+        DEPLOY_PATH = "/opt/deploy"   // folder where compose.yaml is stored
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/vysakhp-ops/fastapi-mysql-app.git'
+                git(
+                    url: 'https://github.com/vysakhp-ops/fastapi-mysql-app.git',
+                    branch: 'main',
+                    credentialsId: 'github-creds'
+                )
             }
         }
 
@@ -28,11 +35,24 @@ pipeline {
             }
         }
 
-        stage('Push Image') {
+        stage('Push Image to Docker Hub') {
             steps {
                 sh 'docker push $DOCKER_USER/$IMAGE_NAME:latest'
             }
         }
+
+        stage('Deploy to Dev Server') {
+            steps {
+                sshagent(['deploy-ssh']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_HOST "
+                            cd $DEPLOY_PATH &&
+                            docker compose pull &&
+                            docker compose up -d
+                        "
+                    """
+                }
+            }
+        }
     }
 }
-
