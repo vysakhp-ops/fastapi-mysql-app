@@ -5,7 +5,7 @@ pipeline {
         IMAGE_NAME = "fastapi-mysql-app"
         DOCKER_USER = "vysakhpanilkumar97"
         DEPLOY_USER = "innovature"
-        DEPLOY_HOST = "10.10.12.11"     // or the server IP
+        DEPLOY_HOST = "10.10.12.123"     // or the server IP
         DEPLOY_PATH = "/opt/deploy"   // folder where compose.yaml is stored
     }
 
