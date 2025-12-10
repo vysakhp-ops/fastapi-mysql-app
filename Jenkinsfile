@@ -3,10 +3,9 @@ pipeline {
 
     environment {
         IMAGE_NAME = "fastapi-mysql-app"
-        DOCKER_USER = "vysakhpanilkumar97"
         DEPLOY_USER = "innovature"
-        DEPLOY_HOST = "10.10.12.123"     // or the server IP
-        DEPLOY_PATH = "/opt/deploy"   // folder where compose.yaml is stored
+        DEPLOY_HOST = "10.10.12.123"
+        DEPLOY_PATH = "/opt/deploy"
     }
 
     stages {
@@ -23,31 +22,33 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $DOCKER_USER/$IMAGE_NAME:latest ./app'
+                sh 'docker build -t $IMAGE_NAME:latest ./app'
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Save Docker Image') {
             steps {
-                withCredentials([string(credentialsId: 'dockerhub-pass', variable: 'DOCKER_PASS')]) {
-                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                sh 'docker save -o app-image.tar $IMAGE_NAME:latest'
+            }
+        }
+
+        stage('Copy Image to Dev Server') {
+            steps {
+                sshagent(['deploy-ssh']) {
+                    sh """
+                        scp -o StrictHostKeyChecking=no app-image.tar $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/
+                    """
                 }
             }
         }
 
-        stage('Push Image to Docker Hub') {
-            steps {
-                sh 'docker push $DOCKER_USER/$IMAGE_NAME:latest'
-            }
-        }
-
-        stage('Deploy to Dev Server') {
+        stage('Load & Deploy on Dev Server') {
             steps {
                 sshagent(['deploy-ssh']) {
                     sh """
                         ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_HOST "
+                            docker load -i $DEPLOY_PATH/app-image.tar &&
                             cd $DEPLOY_PATH &&
-                            docker compose pull &&
                             docker compose up -d
                         "
                     """
@@ -56,3 +57,4 @@ pipeline {
         }
     }
 }
+
