@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "fastapi-mysql-app"
         DEPLOY_USER = "innovature"
-        DEPLOY_HOST = "10.10.12.123"
+        DEPLOY_HOST = "10.10.12.242"
         DEPLOY_PATH = "/opt/deploy"
     }
 
